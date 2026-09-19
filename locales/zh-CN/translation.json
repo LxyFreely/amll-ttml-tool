@@ -163,7 +163,12 @@
 			"palette": "配色方案",
 			"paletteCustom": "自定义",
 			"gradientEditorDesc": "Pos 0.0 对应最安静的部分，1.0 对应最响亮的部分。建议 Pos 越大，使用亮度越高的颜色。",
-			"addStop": "添加色标"
+			"addStop": "添加色标",
+			"frequencyAxis": "频率轴",
+			"logAmountDesc": "控制频率重分配曲线的对数程度：0 为线性，1 为完全对数，低频会占用更多行。",
+			"reassignDesc": "使用相位声码器估计瞬时频率并把能量重分配，频谱会锐利很多，但计算量更大。",
+			"fftSizeDesc": "越大频率分辨率越高，但时间分辨率越低、计算量越大。",
+			"overlapDesc": "重叠越高，横向（时间）分辨率越高，但计算量也越大。重叠过低（≤50%）会因相位混叠出现伪影，建议 87.5% 及以上。"
 		}
 	},
 	"topBar": {
@@ -624,7 +629,16 @@
 		"invalidEndTime": "不能选择此结束时间",
 		"noAudioLoaded": "请先加载一个音频文件来渲染频谱图哦",
 		"loadAudio": "加载音频文件",
-		"showUnselectedLines": "显示未选中行"
+		"showUnselectedLines": "显示未选中行",
+		"frequencyAxis": "频率轴",
+		"linear": "线性",
+		"logarithmic": "对数 {percent}%",
+		"reassign": "频率重分配",
+		"fftSize": "FFT 窗口大小",
+		"overlap": "重叠",
+		"applyReassign": "应用并重新计算",
+		"reassignPending": "参数已修改，点击按钮后才会重新计算。",
+		"reassignApplied": "参数已生效。"
 	},
 	"pwa": {
 		"offlineReady": "网站已成功离线缓存，后续可离线访问本网页",

@@ -21,6 +21,65 @@ export const spectrogramHeightAtom = atomWithStorage(
 	"settings_spectrogramHeight",
 	256,
 );
+/**
+ * @description 频率轴的对数程度
+ *
+ * - `0` 完全线性
+ * - `1` 完全对数（低频占用更多行）
+ */
+export const spectrogramLogAmountAtom = atomWithStorage(
+	"settings_spectrogramLogAmount",
+	0,
+);
+/**
+ * @description 是否启用相位声码器频率重分配（更锐利的频谱）
+ */
+export const spectrogramReassignAtom = atomWithStorage(
+	"settings_spectrogramReassign",
+	false,
+);
+
+/**
+ * @description 重分配频谱的可应用参数
+ */
+export interface ReassignConfig {
+	/** FFT 窗口大小 */
+	fftSize: number;
+	/** 帧重叠百分比，越大时间分辨率越高、计算量越大 */
+	overlapPercent: number;
+	/** 频率轴对数程度 */
+	logAmount: number;
+}
+
+export const DEFAULT_REASSIGN_CONFIG: ReassignConfig = {
+	fftSize: 2048,
+	overlapPercent: 87.5,
+	logAmount: 0,
+};
+
+/** 可选的 FFT 窗口大小 */
+export const REASSIGN_FFT_SIZE_OPTIONS = [512, 1024, 2048, 4096, 8192];
+/** 可选的帧重叠百分比 */
+export const REASSIGN_OVERLAP_OPTIONS = [0, 50, 75, 87.5, 93.75];
+
+/**
+ * @description 重分配参数草稿，拖动滑块时只改这里，不会触发重新计算
+ */
+export const spectrogramReassignFftSizeAtom = atomWithStorage(
+	"settings_spectrogramReassignFftSize",
+	DEFAULT_REASSIGN_CONFIG.fftSize,
+);
+export const spectrogramReassignOverlapAtom = atomWithStorage(
+	"settings_spectrogramReassignOverlap",
+	DEFAULT_REASSIGN_CONFIG.overlapPercent,
+);
+/**
+ * @description 已应用的重分配参数，只有点击「应用」时才更新
+ */
+export const spectrogramReassignAppliedAtom = atomWithStorage<ReassignConfig>(
+	"settings_spectrogramReassignApplied",
+	DEFAULT_REASSIGN_CONFIG,
+);
 export const spectrogramScrollLeftAtom = atom(0);
 export const spectrogramContainerWidthAtom = atom(0);
 

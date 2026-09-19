@@ -125,7 +125,7 @@ export default function exportTTMLText(ttmlLyric: TTMLLyric): string {
 		const span = doc.createElement("span");
 		span.setAttribute("begin", msToTimestamp(word.startTime));
 		span.setAttribute("end", msToTimestamp(word.endTime));
-		span.appendChild(doc.createTextNode(word.romanWord));
+		span.appendChild(doc.createTextNode(word.romanWord ?? ""));
 		return span;
 	}
 

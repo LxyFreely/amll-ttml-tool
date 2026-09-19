@@ -1,11 +1,26 @@
-import { Button, Flex, Select, Text, TextField } from "@radix-ui/themes";
+import {
+	Button,
+	Flex,
+	Select,
+	Slider,
+	Switch,
+	Text,
+	TextField,
+} from "@radix-ui/themes";
 import { useAtom } from "jotai";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	customPaletteStopsAtom,
 	predefinedPalettes,
+	REASSIGN_FFT_SIZE_OPTIONS,
+	REASSIGN_OVERLAP_OPTIONS,
 	selectedPaletteIdAtom,
+	spectrogramLogAmountAtom,
+	spectrogramReassignAppliedAtom,
+	spectrogramReassignAtom,
+	spectrogramReassignFftSizeAtom,
+	spectrogramReassignOverlapAtom,
 } from "$/modules/spectrogram/states";
 
 export const SettingsSpectrogramTab = () => {
@@ -15,6 +30,28 @@ export const SettingsSpectrogramTab = () => {
 	);
 	const [globalStops, setGlobalStops] = useAtom(customPaletteStopsAtom);
 	const [localStops, setLocalStops] = useState(globalStops);
+	const [logAmount, setLogAmount] = useAtom(spectrogramLogAmountAtom);
+	const [reassign, setReassign] = useAtom(spectrogramReassignAtom);
+	const [reassignFftSize, setReassignFftSize] = useAtom(
+		spectrogramReassignFftSizeAtom,
+	);
+	const [reassignOverlap, setReassignOverlap] = useAtom(
+		spectrogramReassignOverlapAtom,
+	);
+	const [reassignApplied, setReassignApplied] = useAtom(
+		spectrogramReassignAppliedAtom,
+	);
+	const reassignDirty =
+		reassignFftSize !== reassignApplied.fftSize ||
+		reassignOverlap !== reassignApplied.overlapPercent ||
+		logAmount !== reassignApplied.logAmount;
+	const applyReassignConfig = () => {
+		setReassignApplied({
+			fftSize: reassignFftSize,
+			overlapPercent: reassignOverlap,
+			logAmount,
+		});
+	};
 
 	useEffect(() => {
 		setLocalStops(globalStops);
@@ -68,6 +105,111 @@ export const SettingsSpectrogramTab = () => {
 
 	return (
 		<Flex direction="column" gap="4">
+			<Flex direction="column" gap="2">
+				<Flex align="center" justify="between" gap="2">
+					<Text>{t("settings.spectrogram.frequencyAxis", "频率轴")}</Text>
+					<Text size="1" color="gray">
+						{logAmount <= 0
+							? t("spectrogram.linear", "线性")
+							: t("spectrogram.logarithmic", "对数 {percent}%", {
+									percent: Math.round(logAmount * 100),
+								})}
+					</Text>
+				</Flex>
+				<Slider
+					min={0}
+					max={1}
+					step={0.01}
+					value={[logAmount]}
+					onValueChange={(v) => setLogAmount(v[0])}
+				/>
+				<Text size="1" color="gray">
+					{t(
+						"settings.spectrogram.logAmountDesc",
+						"控制频率重分配曲线的对数程度：0 为线性，1 为完全对数，低频会占用更多行。",
+					)}
+				</Text>
+			</Flex>
+
+			<Flex direction="column" gap="2">
+				<Flex align="center" justify="between" gap="2">
+					<Text>{t("spectrogram.reassign", "频率重分配")}</Text>
+					<Switch checked={reassign} onCheckedChange={setReassign} />
+				</Flex>
+				<Text size="1" color="gray">
+					{t(
+						"settings.spectrogram.reassignDesc",
+						"使用相位声码器估计瞬时频率并把能量重分配，频谱会锐利很多，但计算量更大。",
+					)}
+				</Text>
+			</Flex>
+
+			{reassign && (
+				<Flex direction="column" gap="3">
+					<Flex direction="column" gap="2" align="start">
+						<Text size="2">{t("spectrogram.fftSize", "FFT 窗口大小")}</Text>
+						<Select.Root
+							value={String(reassignFftSize)}
+							onValueChange={(v) => setReassignFftSize(Number(v))}
+						>
+							<Select.Trigger />
+							<Select.Content>
+								{REASSIGN_FFT_SIZE_OPTIONS.map((size) => (
+									<Select.Item key={size} value={String(size)}>
+										{size}
+									</Select.Item>
+								))}
+							</Select.Content>
+						</Select.Root>
+						<Text size="1" color="gray">
+							{t(
+								"settings.spectrogram.fftSizeDesc",
+								"越大频率分辨率越高，但时间分辨率越低、计算量越大。",
+							)}
+						</Text>
+					</Flex>
+
+					<Flex direction="column" gap="2" align="start">
+						<Text size="2">{t("spectrogram.overlap", "重叠")}</Text>
+						<Select.Root
+							value={String(reassignOverlap)}
+							onValueChange={(v) => setReassignOverlap(Number(v))}
+						>
+							<Select.Trigger />
+							<Select.Content>
+								{REASSIGN_OVERLAP_OPTIONS.map((value) => (
+									<Select.Item key={value} value={String(value)}>
+										{value}%
+									</Select.Item>
+								))}
+							</Select.Content>
+						</Select.Root>
+						<Text size="1" color="gray">
+							{t(
+								"settings.spectrogram.overlapDesc",
+								"重叠越高，横向（时间）分辨率越高，计算量也随之增加。",
+							)}
+						</Text>
+					</Flex>
+
+					<Button
+						onClick={applyReassignConfig}
+						disabled={!reassignDirty}
+						variant={reassignDirty ? "solid" : "soft"}
+					>
+						{t("spectrogram.applyReassign", "应用并重新计算")}
+					</Button>
+					<Text size="1" color="gray">
+						{reassignDirty
+							? t(
+									"spectrogram.reassignPending",
+									"参数已修改，点击按钮后才会重新计算。",
+								)
+							: t("spectrogram.reassignApplied", "参数已生效。")}
+					</Text>
+				</Flex>
+			)}
+
 			<Text as="label">
 				<Flex direction="column" gap="2" align="start">
 					<Text>{t("settings.spectrogram.palette", "配色方案")}</Text>

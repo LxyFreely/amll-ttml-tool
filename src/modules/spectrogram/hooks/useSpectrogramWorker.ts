@@ -14,6 +14,10 @@ export type TileEntry = {
 	height: number;
 	gain: number;
 	paletteId: string;
+	logAmount: number;
+	reassign: boolean;
+	fftSize: number;
+	hopLength: number;
 };
 
 class SpectrogramWorkerClient {
@@ -138,7 +142,7 @@ export const useSpectrogramWorker = (
 			if (!clientRef.current) return;
 
 			const cacheKey = `tile-${params.tileIndex}`;
-			const requestFingerprint = `${params.tileIndex}-w${params.tileWidthPx}-h${params.height}-g${params.gain}-p${params.paletteId}`;
+			const requestFingerprint = `${params.tileIndex}-w${params.tileWidthPx}-h${params.height}-g${params.gain}-p${params.paletteId}-l${params.logAmount}-r${params.reassign}-f${params.fftSize}-h${params.hopLength}`;
 
 			const cacheEntry = tileCache.current.get(cacheKey);
 
@@ -147,7 +151,11 @@ export const useSpectrogramWorker = (
 				cacheEntry.width < params.tileWidthPx ||
 				cacheEntry.height !== params.height ||
 				cacheEntry.gain !== params.gain ||
-				cacheEntry.paletteId !== params.paletteId;
+				cacheEntry.paletteId !== params.paletteId ||
+				cacheEntry.logAmount !== params.logAmount ||
+				cacheEntry.reassign !== params.reassign ||
+				cacheEntry.fftSize !== params.fftSize ||
+				cacheEntry.hopLength !== params.hopLength;
 
 			if (isStale && !activeRequests.current.has(requestFingerprint)) {
 				activeRequests.current.add(requestFingerprint);
@@ -161,6 +169,10 @@ export const useSpectrogramWorker = (
 						height: params.height,
 						gain: params.gain,
 						paletteId: params.paletteId,
+						logAmount: params.logAmount,
+						reassign: params.reassign,
+						fftSize: params.fftSize,
+						hopLength: params.hopLength,
 					});
 
 					setLastTileTimestamp(Date.now());

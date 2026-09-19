@@ -1,4 +1,5 @@
 import {
+	DataTrending24Regular,
 	EyeFilled,
 	EyeOffFilled,
 	MusicNote2Filled,
@@ -7,7 +8,10 @@ import {
 	Button,
 	Flex,
 	IconButton,
+	Popover,
+	Select,
 	Slider,
+	Switch,
 	Text,
 	Theme,
 	Tooltip,
@@ -37,13 +41,21 @@ import { useSpectrogramWorker } from "$/modules/spectrogram/hooks/useSpectrogram
 import { useTimelineEditing } from "$/modules/spectrogram/hooks/useTimelineEditing.ts";
 import {
 	currentPaletteAtom,
+	REASSIGN_FFT_SIZE_OPTIONS,
+	REASSIGN_OVERLAP_OPTIONS,
 	spectrogramContainerWidthAtom,
 	spectrogramGainAtom,
 	spectrogramHeightAtom,
 	spectrogramHoverPxAtom,
 	spectrogramHoverTimeMsAtom,
+	spectrogramLogAmountAtom,
+	spectrogramReassignAppliedAtom,
+	spectrogramReassignAtom,
+	spectrogramReassignFftSizeAtom,
+	spectrogramReassignOverlapAtom,
 } from "$/modules/spectrogram/states";
 import { isDraggingAtom } from "$/modules/spectrogram/states/dnd.ts";
+import { hopLengthFromOverlap } from "$/modules/spectrogram/utils/reassigned-spectrogram";
 import { selectedLinesAtom, showUnselectedLinesAtom } from "$/states/main.ts";
 import { msToTimestamp } from "$/utils/timestamp.ts";
 import styles from "./AudioSpectrogram.module.css";
@@ -72,6 +84,45 @@ export const AudioSpectrogram: FC = () => {
 
 	const [gain, setGain] = useAtom(spectrogramGainAtom);
 	const [dataHeight, setDataHeight] = useAtom(spectrogramHeightAtom);
+	const [logAmount, setLogAmount] = useAtom(spectrogramLogAmountAtom);
+	const [reassign, setReassign] = useAtom(spectrogramReassignAtom);
+	const [reassignFftSize, setReassignFftSize] = useAtom(
+		spectrogramReassignFftSizeAtom,
+	);
+	const [reassignOverlap, setReassignOverlap] = useAtom(
+		spectrogramReassignOverlapAtom,
+	);
+	const [reassignApplied, setReassignApplied] = useAtom(
+		spectrogramReassignAppliedAtom,
+	);
+
+	// 重分配模式下，滑块/选项改的是草稿，只有点「应用」才会真正重算
+	const effectiveLogAmount = reassign ? reassignApplied.logAmount : logAmount;
+	const effectiveFftSize = reassignApplied.fftSize;
+	const effectiveHopLength = hopLengthFromOverlap(
+		reassignApplied.fftSize,
+		reassignApplied.overlapPercent,
+	);
+	const reassignDirty =
+		reassignFftSize !== reassignApplied.fftSize ||
+		reassignOverlap !== reassignApplied.overlapPercent ||
+		logAmount !== reassignApplied.logAmount;
+
+	// 普通频谱是廉价的前端重映射，对数程度可以实时生效
+	useEffect(() => {
+		if (reassign) return;
+		setReassignApplied((prev) =>
+			prev.logAmount === logAmount ? prev : { ...prev, logAmount },
+		);
+	}, [reassign, logAmount, setReassignApplied]);
+
+	const applyReassignConfig = useCallback(() => {
+		setReassignApplied({
+			fftSize: reassignFftSize,
+			overlapPercent: reassignOverlap,
+			logAmount,
+		});
+	}, [setReassignApplied, reassignFftSize, reassignOverlap, logAmount]);
 	const [showUnselectedLines, setShowUnselectedLines] = useAtom(
 		showUnselectedLinesAtom,
 	);
@@ -180,6 +231,10 @@ export const AudioSpectrogram: FC = () => {
 				height: dataHeight,
 				tileWidthPx: targetLodWidth,
 				paletteId: currentPaletteId,
+				logAmount: effectiveLogAmount,
+				reassign: reassign,
+				fftSize: effectiveFftSize,
+				hopLength: effectiveHopLength,
 			});
 
 			const cacheEntry = tileCache.current.get(cacheId);
@@ -200,6 +255,10 @@ export const AudioSpectrogram: FC = () => {
 		containerWidth,
 		gain,
 		dataHeight,
+		effectiveLogAmount,
+		effectiveFftSize,
+		effectiveHopLength,
+		reassign,
 		requestTileIfNeeded,
 		tileCache,
 		palette.id,
@@ -498,6 +557,118 @@ export const AudioSpectrogram: FC = () => {
 				</div>
 
 				<div className={`${styles.sidebar} ${styles.rightSidebar}`}>
+					<Popover.Root>
+						<Popover.Trigger>
+							<IconButton
+								variant={logAmount > 0 || reassign ? "solid" : "outline"}
+								aria-label={t("spectrogram.frequencyAxis", "频率轴")}
+							>
+								<DataTrending24Regular />
+							</IconButton>
+						</Popover.Trigger>
+						<Popover.Content width="280px">
+							<Flex direction="column" gap="3">
+								<Flex align="center" justify="between" gap="2">
+									<Text size="2" weight="medium">
+										{t("spectrogram.frequencyAxis", "频率轴")}
+									</Text>
+									<Text size="1" color="gray">
+										{logAmount <= 0
+											? t("spectrogram.linear", "线性")
+											: t("spectrogram.logarithmic", "对数 {percent}%", {
+													percent: Math.round(logAmount * 100),
+												})}
+									</Text>
+								</Flex>
+								<Slider
+									min={0}
+									max={1}
+									step={0.01}
+									value={[logAmount]}
+									onValueChange={(v) => setLogAmount(v[0])}
+								/>
+								<Text size="1" color="gray">
+									{t(
+										"settings.spectrogram.logAmountDesc",
+										"控制频率重分配曲线的对数程度：0 为线性，1 为完全对数，低频会占用更多行。",
+									)}
+								</Text>
+								<Flex align="center" justify="between" gap="2">
+									<Text size="2">
+										{t("spectrogram.reassign", "频率重分配")}
+									</Text>
+									<Switch
+										checked={reassign}
+										onCheckedChange={setReassign}
+									/>
+								</Flex>
+								<Text size="1" color="gray">
+									{t(
+										"settings.spectrogram.reassignDesc",
+										"使用相位声码器估计瞬时频率并把能量重分配，频谱会锐利很多，但计算量更大。",
+									)}
+								</Text>
+
+								{reassign && (
+									<>
+										<Flex direction="column" gap="1">
+											<Text size="1" color="gray">
+												{t("spectrogram.fftSize", "FFT 窗口大小")}
+											</Text>
+											<Select.Root
+												value={String(reassignFftSize)}
+												onValueChange={(v) => setReassignFftSize(Number(v))}
+											>
+												<Select.Trigger />
+												<Select.Content>
+													{REASSIGN_FFT_SIZE_OPTIONS.map((size) => (
+														<Select.Item key={size} value={String(size)}>
+															{size}
+														</Select.Item>
+													))}
+												</Select.Content>
+											</Select.Root>
+										</Flex>
+
+										<Flex direction="column" gap="1">
+											<Text size="1" color="gray">
+												{t("spectrogram.overlap", "重叠")}
+											</Text>
+											<Select.Root
+												value={String(reassignOverlap)}
+												onValueChange={(v) => setReassignOverlap(Number(v))}
+											>
+												<Select.Trigger />
+												<Select.Content>
+													{REASSIGN_OVERLAP_OPTIONS.map((value) => (
+														<Select.Item key={value} value={String(value)}>
+															{value}%
+														</Select.Item>
+													))}
+												</Select.Content>
+											</Select.Root>
+										</Flex>
+
+										<Button
+											onClick={applyReassignConfig}
+											disabled={!reassignDirty}
+											variant={reassignDirty ? "solid" : "soft"}
+										>
+											{t("spectrogram.applyReassign", "应用并重新计算")}
+										</Button>
+										<Text size="1" color="gray">
+											{reassignDirty
+												? t(
+														"spectrogram.reassignPending",
+														"参数已修改，点击按钮后才会重新计算。",
+													)
+												: t("spectrogram.reassignApplied", "参数已生效。")}
+										</Text>
+									</>
+								)}
+							</Flex>
+						</Popover.Content>
+					</Popover.Root>
 					<Tooltip
 						content={t("spectrogram.showUnselectedLines", "显示未选中行")}
 						side="left"

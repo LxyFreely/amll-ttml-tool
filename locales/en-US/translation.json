@@ -164,7 +164,12 @@
 			"palette": "Color Palette",
 			"paletteCustom": "Custom",
 			"gradientEditorDesc": "A Pos value of 0.0 corresponds to the quietest part, and 1.0 corresponds to the loudest part. It is recommended to use brighter colors for larger Pos values.",
-			"addStop": "Add Color Stop"
+			"addStop": "Add Color Stop",
+			"frequencyAxis": "Frequency Axis",
+			"logAmountDesc": "Controls how logarithmic the frequency redistribution curve is: 0 is linear, 1 is fully logarithmic, giving more rows to low frequencies.",
+			"reassignDesc": "Uses a phase vocoder to estimate the instantaneous frequency and reassign energy, producing a much sharper spectrogram at a higher computational cost.",
+			"fftSizeDesc": "A larger window gives better frequency resolution but worse time resolution and a higher cost.",
+			"overlapDesc": "A higher overlap gives better horizontal (time) resolution at the cost of more computation. Too low an overlap (<=50%) causes phase-wrapping artifacts; 87.5% or higher is recommended."
 		}
 	},
 	"topBar": {
@@ -626,7 +631,16 @@
 		"invalidEndTime": "Cannot select this end time",
 		"noAudioLoaded": "Please load an audio file to render the spectrogram",
 		"loadAudio": "Load an audio file",
-		"showUnselectedLines": "Show unselected lines"
+		"showUnselectedLines": "Show unselected lines",
+		"frequencyAxis": "Frequency Axis",
+		"linear": "Linear",
+		"logarithmic": "Log {percent}%",
+		"reassign": "Frequency Reassignment",
+		"fftSize": "FFT Window Size",
+		"overlap": "Overlap",
+		"applyReassign": "Apply & Recompute",
+		"reassignPending": "Parameters changed. Click the button to recompute.",
+		"reassignApplied": "Parameters applied."
 	},
 	"pwa": {
 		"offlineReady": "Site successfully cached for offline use",

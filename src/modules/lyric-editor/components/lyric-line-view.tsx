@@ -68,11 +68,11 @@ import {
 	showEndTimeAsDurationAtom,   // 以持续时间显示结束时间
 	ToolMode,                    // 工具模式枚举
 	toolModeAtom,                // 工具模式状态
-} from "$//main.ts";
+} from "$/states/main.ts";
 // 导入歌词数据类型和工厂函数
-import { type LyricLine, newLyricLine, newLyricWord } from "$//ttml.ts";
+import { type LyricLine, newLyricLine, newLyricWord } from "$/types/ttml.ts";
 // 导入毫秒转时间戳工具函数
-import { msToTimestamp } from "$//timestamp.ts";
+import { msToTimestamp } from "$/utils/timestamp.ts";
 // 导入组件样式
 import styles from "./index.module.css";
 // 导入歌词行菜单组件
