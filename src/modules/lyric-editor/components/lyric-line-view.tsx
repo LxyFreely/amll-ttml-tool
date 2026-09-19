@@ -9,12 +9,14 @@
  * https://github.com/amll-dev/amll-ttml-tool/blob/main/LICENSE
  */
 
+// 导入 FluentUI 图标组件
 import {
-	AddFilled,
-	LinkMultiple20Regular,
-	TextAlignRightFilled,
-	VideoBackgroundEffectFilled,
+	AddFilled,                    // 添加图标
+	LinkMultiple20Regular,        // 链接图标
+	TextAlignRightFilled,         // 右对齐文本图标
+	VideoBackgroundEffectFilled,  // 视频背景效果图标
 } from "@fluentui/react-icons";
+// 导入 Radix UI 组件
 import {
 	Button,
 	ContextMenu,
@@ -23,46 +25,63 @@ import {
 	Text,
 	TextField,
 } from "@radix-ui/themes";
+// 导入 classnames 工具库用于条件拼接 CSS 类名
 import classNames from "classnames";
+// 导入 Jotai 状态管理库
 import { type Atom, atom, useAtomValue, useStore } from "jotai";
+// 导入 Jotai 工具函数
 import { splitAtom } from "jotai/utils";
+// 导入 Jotai Immer 钩子用于不可变状态更新
 import { useSetImmerAtom } from "jotai-immer";
+// 导入 React 相关类型和钩子
 import {
-	type FC,
-	Fragment,
-	memo,
-	type SyntheticEvent,
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
+	type FC,                   // 函数组件类型
+	Fragment,                  // React Fragment
+	memo,                      // React 组件记忆化高阶组件
+	type SyntheticEvent,       // 合成事件类型
+	useCallback,               // 记忆化回调函数钩子
+	useEffect,                 // 副作用钩子
+	useLayoutEffect,           // 布局副作用钩子
+	useMemo,                   // 记忆化值钩子
+	useRef,                    // 引用钩子
+	useState,                  // 状态钩子
 } from "react";
+// 导入国际化钩子
 import { useTranslation } from "react-i18next";
+// 导入预测行音译功能
 import { predictLineRomanization } from "$/modules/segmentation/utils/Transliteration/distributor";
+// 导入设置相关的状态原子
 import {
-	enableAutoRomanizationPredictionAtom,
-	showLineRomanizationAtom,
-	showLineTranslationAtom,
-	showTimestampsAtom,
-	showWordRomanizationInputAtom,
+	enableAutoRomanizationPredictionAtom,  // 启用自动音译预测
+	showLineRomanizationAtom,              // 显示行音译
+	showLineTranslationAtom,               // 显示行翻译
+	showTimestampsAtom,                    // 显示时间戳
+	showWordRomanizationInputAtom,         // 显示词音译输入
 } from "$/modules/settings/states/index.ts";
+// 导入同步设置相关的状态原子
 import { visualizeTimestampUpdateAtom } from "$/modules/settings/states/sync.ts";
+// 导入主应用状态
 import {
-	lyricLinesAtom,
-	selectedLinesAtom,
-	selectedWordsAtom,
-	showEndTimeAsDurationAtom,
-	ToolMode,
-	toolModeAtom,
-} from "$/states/main.ts";
-import { type LyricLine, newLyricLine, newLyricWord } from "$/types/ttml.ts";
-import { msToTimestamp } from "$/utils/timestamp.ts";
+	lyricLinesAtom,              // 歌词行数组
+	selectedLinesAtom,           // 已选中的行
+	selectedWordsAtom,           // 已选中的词
+	showEndTimeAsDurationAtom,   // 以持续时间显示结束时间
+	ToolMode,                    // 工具模式枚举
+	toolModeAtom,                // 工具模式状态
+} from "$//main.ts";
+// 导入歌词数据类型和工厂函数
+import { type LyricLine, newLyricLine, newLyricWord } from "$//ttml.ts";
+// 导入毫秒转时间戳工具函数
+import { msToTimestamp } from "$//timestamp.ts";
+// 导入组件样式
 import styles from "./index.module.css";
+// 导入歌词行菜单组件
 import { LyricLineMenu } from "./lyric-line-menu.tsx";
+// 导入拖拽状态
 import { draggingIdAtom } from "./lyric-line-view-states.ts";
+// 导入歌词词视图组件
 import LyricWordView from "./lyric-word-view.tsx";
+// 导入罗马字词视图组件
 import { RomanWordView } from "./roman-word-view.tsx";
 
 const isDraggingAtom = atom(false);

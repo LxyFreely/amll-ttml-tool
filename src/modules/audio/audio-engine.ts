@@ -1,3 +1,4 @@
+// 导入音频相关的状态原子
 import {
 	type AudioTaskType,
 	audioBufferAtom,
@@ -5,26 +6,35 @@ import {
 	audioTaskStateAtom,
 	auditionTimeAtom,
 } from "$/modules/audio/states/index.ts";
+// 导入音频工作线程客户端
 import { AudioWorkerClient } from "$/modules/audio/workers/audio-worker-client";
+// 导入全局状态存储
 import { globalStore } from "$/states/store.ts";
+// 导入日志记录函数
 import { log } from "$/utils/logging";
 
 // Magic, pending original dev's explanation
 // Even don't know where should I put this after refactoring
 // const DELAY = 0.05; // 50ms
 
+// 试听音频的请求动画帧ID
 let auditionRafId: number | null = null;
 
+// 音频引擎类 - 负责管理音频播放、处理等功能
 class AudioEngine extends EventTarget {
-	public workerClient: AudioWorkerClient;
+	public workerClient: AudioWorkerClient;  // 音频工作线程客户端
 
-	//#region Audio context basics
+	//#region 音频上下文基础配置
+	// 私有音频上下文实例
 	private _ctx: AudioContext | null = null;
+	// 获取音频上下文，如果不存在则创建新的
 	get ctx() {
 		if (this._ctx) return this._ctx;
+		// 创建新的音频上下文，设置为交互模式以获得较低延迟
 		this._ctx = new AudioContext({
 			latencyHint: "interactive",
 		});
+		// 记录音频上下文的延迟信息
 		log(
 			"AudioContext created with latency",
 			this._ctx.baseLatency,
@@ -33,12 +43,14 @@ class AudioEngine extends EventTarget {
 		return this._ctx;
 	}
 
+	// 音量控制节点
 	private gainNode: GainNode | null = null;
+	// 获取增益节点，如果不存在则创建新的
 	private get gain() {
 		if (this.gainNode) return this.gainNode;
 		this.gainNode = this.ctx.createGain();
-		this.gainNode.gain.value = 0.5;
-		this.gainNode.connect(this.ctx.destination);
+		this.gainNode.gain.value = 0.5;  // 默认音量为50%
+		this.gainNode.connect(this.ctx.destination);  // 连接到音频输出设备
 		return this.gainNode;
 	}
 	//#endregion

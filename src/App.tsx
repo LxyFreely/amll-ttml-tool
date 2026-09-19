@@ -9,6 +9,7 @@
  * https://github.com/amll-dev/amll-ttml-tool/blob/main/LICENSE
  */
 
+// 导入 Radix UI 组件库中的基本组件
 import {
 	Box,
 	Button,
@@ -18,32 +19,55 @@ import {
 	TextArea,
 	Theme,
 } from "@radix-ui/themes";
+// 导入延迟加载占位符组件
 import SuspensePlaceHolder from "$/components/SuspensePlaceHolder";
+// 导入触摸同步面板组件
 import { TouchSyncPanel } from "$/modules/lyric-editor/components/TouchSyncPanel/index.tsx";
+// 导入日志记录工具函数
 import { log, error as logError } from "$/utils/logging.ts";
+// 导入 Radix UI 主题样式
 import "@radix-ui/themes/styles.css";
+// 导入 Tauri 应用核心 API 和窗口控制 API
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+// 导入平台检测相关 API
 import { platform, version } from "@tauri-apps/plugin-os";
+// 导入 Framer Motion 动画库
 import { AnimatePresence, motion } from "framer-motion";
+// 导入 Jotai 状态管理库的相关钩子
 import { useAtomValue, useSetAtom, useStore } from "jotai";
+// 导入 React 基础钩子和 Suspense 组件
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+// 导入错误边界组件
 import { ErrorBoundary } from "react-error-boundary";
+// 导入国际化钩子
 import { useTranslation } from "react-i18next";
+// 导入 Toast 提示组件
 import { ToastContainer, toast } from "react-toastify";
+// 导入文件保存功能
 import saveFile from "save-file";
+// 导入语义化版本比较函数
 import semverGt from "semver/functions/gt";
+// 导入 App 组件的 CSS 模块
 import styles from "./App.module.css";
+// 导入其他应用组件
 import DarkThemeDetector from "./components/DarkThemeDetector";
 import RibbonBar from "./components/RibbonBar";
 import { TitleBar } from "./components/TitleBar";
+// 导入文件打开处理钩子
 import { useFileOpener } from "./hooks/useFileOpener.ts";
+// 导入音频控制组件和反馈钩子
 import AudioControls from "./modules/audio/components/index.tsx";
 import { useAudioFeedback } from "./modules/audio/hooks/useAudioFeedback.ts";
+// 导入同步模式键盘绑定组件
 import { SyncKeyBinding } from "./modules/lyric-editor/components/sync-keybinding.tsx";
+// 导入自动保存管理器
 import { AutosaveManager } from "./modules/project/autosave/AutosaveManager.tsx";
+// 导入 TTML 文本导出功能
 import exportTTMLText from "./modules/project/logic/ttml-writer.ts";
+// 导入全局拖拽覆盖层
 import { GlobalDragOverlay } from "./modules/project/modals/GlobalDragOverlay.tsx";
+// 导入自定义背景设置相关的状态原子
 import {
 	customBackgroundBlurAtom,
 	customBackgroundBrightnessAtom,
@@ -52,8 +76,11 @@ import {
 	customBackgroundMaskAtom,
 	customBackgroundOpacityAtom,
 } from "./modules/settings/modals/customBackground";
+// 导入触摸同步面板显示状态
 import { showTouchSyncPanelAtom } from "./modules/settings/states/sync.ts";
+// 导入设置对话框状态
 import { settingsDialogAtom, settingsTabAtom } from "./states/dialogs.ts";
+// 导入主题、文件拖拽、歌词行等全局状态
 import {
 	isDarkThemeAtom,
 	isGlobalFileDraggingAtom,
@@ -61,10 +88,14 @@ import {
 	ToolMode,
 	toolModeAtom,
 } from "./states/main.ts";
+// 导入应用更新检查钩子
 import { useAppUpdate } from "./utils/useAppUpdate.ts";
 
+// 使用懒加载导入歌词行视图组件
 const LyricLinesView = lazy(() => import("./modules/lyric-editor/components"));
+// 使用懒加载导入 Apple Music 风格歌词包装器
 const AMLLWrapper = lazy(() => import("./components/AMLLWrapper"));
+// 使用懒加载导入对话框组件
 const Dialogs = lazy(() => import("./components/Dialogs"));
 
 const AppErrorPage = ({
@@ -124,28 +155,32 @@ const AppErrorPage = ({
 	);
 };
 
+// 主应用组件 - 整个应用的根组件
 function App() {
-	const isDarkTheme = useAtomValue(isDarkThemeAtom);
-	const toolMode = useAtomValue(toolModeAtom);
-	const showTouchSyncPanel = useAtomValue(showTouchSyncPanelAtom);
-	const customBackgroundImage = useAtomValue(customBackgroundImageAtom);
-	const customBackgroundOpacity = useAtomValue(customBackgroundOpacityAtom);
-	const customBackgroundMask = useAtomValue(customBackgroundMaskAtom);
-	const customBackgroundBlur = useAtomValue(customBackgroundBlurAtom);
-	const customBackgroundBrightness = useAtomValue(customBackgroundBrightnessAtom);
-	const [hasBackground, setHasBackground] = useState(false);
+	// 获取各种全局状态值
+	const isDarkTheme = useAtomValue(isDarkThemeAtom);                 // 是否启用暗色主题
+	const toolMode = useAtomValue(toolModeAtom);                       // 当前工具模式（编辑/预览/同步）
+	const showTouchSyncPanel = useAtomValue(showTouchSyncPanelAtom);     // 是否显示触摸同步面板
+	const customBackgroundImage = useAtomValue(customBackgroundImageAtom); // 自定义背景图片
+	const customBackgroundOpacity = useAtomValue(customBackgroundOpacityAtom); // 背景透明度
+	const customBackgroundMask = useAtomValue(customBackgroundMaskAtom); // 背景遮罩
+	const customBackgroundBlur = useAtomValue(customBackgroundBlurAtom); // 背景模糊度
+	const customBackgroundBrightness = useAtomValue(customBackgroundBrightnessAtom); // 背景亮度
+	const [hasBackground, setHasBackground] = useState(false);         // 是否有背景效果
+	// 确定实际使用的主题（如果有自定义背景则强制使用浅色主题）
 	const effectiveTheme = customBackgroundImage
-		? "light"
+		? "light"  // 如果设置了自定义背景，则强制使用浅色主题
 		: isDarkTheme
-			? "dark"
+			? "dark"   // 否则根据用户选择的暗色主题决定
 			: "light";
+	// 获取应用更新检查功能
 	const { checkUpdate, status, update } = useAppUpdate();
-	const hasNotifiedRef = useRef(false);
-	const setSettingsOpen = useSetAtom(settingsDialogAtom);
-	const setSettingsTab = useSetAtom(settingsTabAtom);
-	const initCustomBackgroundImage = useSetAtom(customBackgroundImageInitAtom);
-	const { t } = useTranslation();
-	const store = useStore();
+	const hasNotifiedRef = useRef(false);                              // 标记是否已通知更新
+	const setSettingsOpen = useSetAtom(settingsDialogAtom);            // 设置对话框开关
+	const setSettingsTab = useSetAtom(settingsTabAtom);                // 设置选项卡
+	const initCustomBackgroundImage = useSetAtom(customBackgroundImageInitAtom); // 初始化自定义背景
+	const { t } = useTranslation();                                    // 国际化翻译函数
+	const store = useStore();                                          // Jotai 全局状态存储
 
 	useEffect(() => {
 		initCustomBackgroundImage();
