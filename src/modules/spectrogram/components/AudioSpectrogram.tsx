@@ -3,6 +3,7 @@ import {
 	EyeFilled,
 	EyeOffFilled,
 	MusicNote2Filled,
+	Target24Regular,
 	Timer16Regular,
 } from "@fluentui/react-icons";
 import {
@@ -36,6 +37,7 @@ import {
 	isAuditioningAtom,
 	pcmDataReadyAtom,
 } from "$/modules/audio/states/index.ts";
+import { useAutoFollowPlayback } from "$/modules/spectrogram/hooks/useAutoFollowPlayback.ts";
 import { useScrubbing } from "$/modules/spectrogram/hooks/useScrubbing";
 import { useSpectrogramInteraction } from "$/modules/spectrogram/hooks/useSpectrogramInteraction.ts";
 import { useSpectrogramResize } from "$/modules/spectrogram/hooks/useSpectrogramResize.ts";
@@ -44,11 +46,13 @@ import { useTimelineEditing } from "$/modules/spectrogram/hooks/useTimelineEditi
 import {
 	commitLogAmountAtom,
 	currentPaletteAtom,
+	disableAutoFollowAtom,
 	effectiveLogAmountAtom,
 	naturalWeightingScopeAtom,
 	naturalWeightingTiltAtom,
 	setReassignEnabledAtom,
 	showBeatLinesAtom,
+	spectrogramAutoFollowAtom,
 	spectrogramContainerWidthAtom,
 	spectrogramGainAtom,
 	spectrogramHeightAtom,
@@ -99,6 +103,7 @@ export const AudioSpectrogram: FC = () => {
 		showUnselectedLinesAtom,
 	);
 	const [showBeatLines, setShowBeatLines] = useAtom(showBeatLinesAtom);
+	const [autoFollow, setAutoFollow] = useAtom(spectrogramAutoFollowAtom);
 	const [logAmount, setLogAmount] = useAtom(spectrogramLogAmountAtom);
 	const reassign = useAtomValue(spectrogramReassignAtom);
 	const setReassign = useSetAtom(setReassignEnabledAtom);
@@ -166,7 +171,7 @@ export const AudioSpectrogram: FC = () => {
 		spectrogramContainerWidthAtom,
 	);
 
-	const { zoom, scrollLeft, isZooming } = useSpectrogramInteraction(
+	const { zoom, scrollLeft, isZooming, scrollTo } = useSpectrogramInteraction(
 		scrollContainerRef,
 		containerWidth,
 		pcmDataReady,
@@ -177,6 +182,9 @@ export const AudioSpectrogram: FC = () => {
 	useLayoutEffect(() => {
 		viewStateRef.current = { zoom, scrollLeft, containerWidth };
 	}, [zoom, scrollLeft, containerWidth]);
+
+	// 播放时自动跟随：字走到视野 70% 处就翻回视野 10%
+	useAutoFollowPlayback(autoFollow, viewStateRef, scrollTo);
 
 	const syncCursorsToDOM = useCallback((timeInSeconds: number) => {
 		const { zoom, scrollLeft, containerWidth } = viewStateRef.current;
@@ -218,6 +226,12 @@ export const AudioSpectrogram: FC = () => {
 	const setHoverPx = useSetAtom(spectrogramHoverPxAtom);
 	const hoverTimeMs = useAtomValue(spectrogramHoverTimeMsAtom);
 	const isDragging = useAtomValue(isDraggingAtom);
+	const disableAutoFollow = useSetAtom(disableAutoFollowAtom);
+
+	// 手动拖歌词片段/分割线时也关掉自动跟随
+	useEffect(() => {
+		if (isDragging) disableAutoFollow();
+	}, [isDragging, disableAutoFollow]);
 
 	const rulerRef = useRef<TimelineRulerHandle>(null);
 
@@ -322,8 +336,6 @@ export const AudioSpectrogram: FC = () => {
 				tileId: cacheId,
 				left: i * tileDisplayWidthPx,
 				width: tileDisplayWidthPx,
-				height: dataHeight,
-				canvasWidth: currentBitmap?.width || targetLodWidth,
 				bitmap: currentBitmap,
 			});
 		}
@@ -662,6 +674,21 @@ export const AudioSpectrogram: FC = () => {
 				</div>
 
 				<div className={`${styles.sidebar} ${styles.rightSidebar}`}>
+					<Tooltip
+						content={t(
+							"spectrogram.autoFollow",
+							"自动跟随播放：字走到 70% 处时翻回 10%",
+						)}
+						side="left"
+					>
+						<IconButton
+							variant={autoFollow ? "solid" : "outline"}
+							onClick={() => setAutoFollow((prev) => !prev)}
+							aria-label={t("spectrogram.autoFollow", "自动跟随播放")}
+						>
+							<Target24Regular />
+						</IconButton>
+					</Tooltip>
 					<Popover.Root>
 						<Popover.Trigger>
 							<IconButton

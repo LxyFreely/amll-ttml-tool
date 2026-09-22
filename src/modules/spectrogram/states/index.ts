@@ -34,6 +34,27 @@ export const showBeatLinesAtom = atomWithStorage(
 );
 
 /**
+ * @description 播放时是否自动跟随
+ *
+ * 打开后，当前正在唱的那个字的开头一旦跑到频谱图视野外，就把视野滚到
+ * 让这个字落在左侧 30% 的位置。
+ */
+export const spectrogramAutoFollowAtom = atomWithStorage(
+	"settings_spectrogramAutoFollow",
+	true,
+);
+
+/**
+ * @description 用户手动滚动/拖动视野时关掉自动跟随
+ *
+ * 和很多播放器一样：只要你自己动了视野，就不再自动跟随，
+ * 直到重新把右侧的跟随按钮点亮。
+ */
+export const disableAutoFollowAtom = atom(null, (_get, set) => {
+	set(spectrogramAutoFollowAtom, false);
+});
+
+/**
  * @description 频率轴的对数程度
  *
  * - `0` 完全线性

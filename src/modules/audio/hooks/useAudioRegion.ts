@@ -1,6 +1,7 @@
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useRef } from "react";
 import {
+	disableAutoFollowAtom,
 	spectrogramContainerWidthAtom,
 	spectrogramScrollLeftAtom,
 	spectrogramZoomAtom,
@@ -17,6 +18,7 @@ export const useAudioRegion = (
 	const [scrollLeft, setScrollLeft] = useAtom(spectrogramScrollLeftAtom);
 	const containerWidth = useAtomValue(spectrogramContainerWidthAtom);
 	const currentDuration = useAtomValue(currentDurationAtom);
+	const disableAutoFollow = useSetAtom(disableAutoFollowAtom);
 
 	const dragStateRef = useRef<{
 		type: "drag" | "resizeLeft" | "resizeRight";
@@ -123,6 +125,9 @@ export const useAudioRegion = (
 
 			if (!type) return;
 
+			// 手动拖音频区域就不再自动跟随
+			disableAutoFollow();
+
 			const timePerPixelOnSlider = currentDuration / sliderWidthPx;
 			const startTimeMs = (scrollLeft / zoom) * 1000;
 			const endTimeMs = ((scrollLeft + containerWidth) / zoom) * 1000;
@@ -151,6 +156,7 @@ export const useAudioRegion = (
 			handleDragEnd,
 			containerRef,
 			isDraggingRef,
+			disableAutoFollow,
 		],
 	);
 

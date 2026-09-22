@@ -1,8 +1,9 @@
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { useAtomValue } from "jotai/index";
 import { useCallback, useEffect, useRef } from "react";
 import { currentDurationAtom, loadedAudioAtom } from "$/modules/audio/states";
 import {
+	disableAutoFollowAtom,
 	spectrogramScrollLeftAtom,
 	spectrogramZoomAtom,
 } from "$/modules/spectrogram/states";
@@ -19,6 +20,7 @@ export function useSpectrogramInteraction(
 
 	const [zoom, setZoom] = useAtom(spectrogramZoomAtom);
 	const [scrollLeft, setScrollLeft] = useAtom(spectrogramScrollLeftAtom);
+	const disableAutoFollow = useSetAtom(disableAutoFollowAtom);
 
 	const targetScrollLeftRef = useRef(scrollLeft);
 	const targetZoomRef = useRef(zoom);
@@ -68,6 +70,39 @@ export function useSpectrogramInteraction(
 		}
 	}, [animationLoop]);
 
+	/**
+	 * @description 滚动到指定的 scrollLeft（会按总时长与容器宽度裁剪）
+	 *
+	 * `animate` 为 true 时复用滚轮那套缓动，播放自动跟随用它来平滑推进视野；
+	 * 为 false 则直接跳过去。
+	 */
+	const scrollTo = useCallback(
+		(nextScrollLeft: number, animate = true) => {
+			const durationSec = currentDurationMs > 0 ? currentDurationMs / 1000 : 0;
+			const totalWidth = durationSec * targetZoomRef.current;
+			const maxScrollLeft = Math.max(0, totalWidth - containerWidth);
+			const clamped = Math.max(0, Math.min(nextScrollLeft, maxScrollLeft));
+
+			targetScrollLeftRef.current = clamped;
+
+			if (animate) {
+				startAnimation();
+				return;
+			}
+
+			cancelAnimation();
+			currentScrollLeftRef.current = clamped;
+			setScrollLeft(clamped);
+		},
+		[
+			cancelAnimation,
+			containerWidth,
+			currentDurationMs,
+			setScrollLeft,
+			startAnimation,
+		],
+	);
+
 	const handleWheelScroll = useCallback(
 		(event: WheelEvent) => {
 			if (!scrollContainerRef.current || !currentDurationMs) {
@@ -103,6 +138,9 @@ export function useSpectrogramInteraction(
 			} else {
 				const scrollAmount = event.deltaY + event.deltaX;
 				if (scrollAmount !== 0) {
+					// 手动滚动视野就不再自动跟随
+					disableAutoFollow();
+
 					const newScrollLeft = targetScrollLeftRef.current + scrollAmount;
 
 					const totalWidth = durationSec * targetZoomRef.current;
@@ -118,7 +156,13 @@ export function useSpectrogramInteraction(
 
 			startAnimation();
 		},
-		[startAnimation, currentDurationMs, containerWidth, scrollContainerRef],
+		[
+			startAnimation,
+			currentDurationMs,
+			containerWidth,
+			scrollContainerRef,
+			disableAutoFollow,
+		],
 	);
 
 	useEffect(() => {
@@ -160,5 +204,6 @@ export function useSpectrogramInteraction(
 		scrollLeft,
 		isZooming: Math.abs(zoom - targetZoomRef.current) > 0.01,
 		targetZoomRef,
+		scrollTo,
 	};
 }

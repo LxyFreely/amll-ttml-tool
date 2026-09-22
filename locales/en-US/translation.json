@@ -694,6 +694,7 @@
 		"loadAudio": "Load an audio file",
 		"showUnselectedLines": "Show unselected lines",
 		"showBeatLines": "Show beats on spectrogram",
+		"autoFollow": "Auto-follow playback: flip back to 10% once a word reaches 70% (turns off when you scroll or drag manually)",
 		"clickToCalibrateBeatN": "Click to calibrate beat {n}",
 		"frequencyAxis": "Frequency Axis",
 		"linear": "Linear",

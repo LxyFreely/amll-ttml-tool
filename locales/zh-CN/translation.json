@@ -694,6 +694,7 @@
 		"loadAudio": "加载音频文件",
 		"showUnselectedLines": "显示未选中行",
 		"showBeatLines": "在频谱图上显示拍子",
+		"autoFollow": "自动跟随播放：字走到 70% 处时翻回 10%（手动滚动/拖动会自动关闭）",
 		"clickToCalibrateBeatN": "点击校准第 {n} 拍",
 		"frequencyAxis": "频率轴",
 		"linear": "线性",

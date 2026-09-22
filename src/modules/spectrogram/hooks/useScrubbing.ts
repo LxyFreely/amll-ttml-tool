@@ -1,7 +1,8 @@
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { audioEngine } from "$/modules/audio/audio-engine";
 import { currentDurationAtom } from "$/modules/audio/states";
+import { disableAutoFollowAtom } from "$/modules/spectrogram/states";
 
 export function useScrubbing(
 	scrollContainerRef: React.RefObject<HTMLDivElement | null>,
@@ -9,6 +10,7 @@ export function useScrubbing(
 	zoom: number,
 ) {
 	const currentDurationMs = useAtomValue(currentDurationAtom);
+	const disableAutoFollow = useSetAtom(disableAutoFollowAtom);
 	const isScrubbingRef = useRef(false);
 
 	const scrollLeftRef = useRef(scrollLeft);
@@ -60,6 +62,9 @@ export function useScrubbing(
 			event.stopPropagation();
 
 			if (!scrollContainerRef.current) return;
+
+			// 手动拖播放头就不再自动跟随
+			disableAutoFollow();
 			isScrubbingRef.current = true;
 
 			lastClientXRef.current = event.clientX;
@@ -75,7 +80,7 @@ export function useScrubbing(
 			window.addEventListener("mousemove", handleScrubMove);
 			window.addEventListener("mouseup", handleScrubEnd, { once: true });
 		},
-		[handleScrubMove, handleScrubEnd, zoom, scrollContainerRef],
+		[handleScrubMove, handleScrubEnd, zoom, scrollContainerRef, disableAutoFollow],
 	);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: 用 scrollLeft 作为 Trigger 以避免将 scrollLeft 加入 useCallback 导致频繁解绑事件
